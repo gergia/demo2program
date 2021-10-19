@@ -2,6 +2,9 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import pdb
+import shutil
+
 import numpy as np
 import os
 import time
@@ -51,6 +54,7 @@ class Trainer(object):
             hyper_parameter_str,
             time.strftime("%Y%m%d-%H%M%S")
         )
+        self.latest_folder = './train_dir/latest_%s' % config.model
 
         if not os.path.exists(self.train_dir): os.makedirs(self.train_dir)
         log.infov("Train Dir: %s", self.train_dir)
@@ -131,11 +135,18 @@ class Trainer(object):
             global_step=self.global_step,
         )
 
-        session_config = tf.ConfigProto(
-            allow_soft_placement=True,
-            gpu_options=tf.GPUOptions(allow_growth=True),
-            device_count={'GPU': 1},
-        )
+        if config.no_gpu is True:
+            session_config = tf.ConfigProto(
+                allow_soft_placement=True,
+                # gpu_options=tf.GPUOptions(allow_growth=True),
+                # device_count={'GPU': 1},
+            )
+        else:
+            session_config = tf.ConfigProto(
+                allow_soft_placement=True,
+                gpu_options=tf.GPUOptions(allow_growth=True),
+                device_count={'GPU': 1},
+            )
         self.session = self.supervisor.prepare_or_wait_for_session(
             config=session_config)
 
@@ -146,13 +157,21 @@ class Trainer(object):
             log.info("Loaded the pretrain parameters from the provided" +
                      "checkpoint path")
 
+        self.max_steps = self.config.max_steps
+        self.ckpt_save_step = self.config.ckpt_save_step
+
+
+
+
+
+
     def train(self):
         log.infov("Training Starts!")
         pprint(self.batch_train)
 
-        max_steps = 1000000
+        max_steps = self.max_steps
 
-        ckpt_save_step = 1000
+        ckpt_save_step = self.ckpt_save_step
         log_step = self.log_step
         test_sample_step = self.test_sample_step
         write_summary_step = self.write_summary_step
@@ -182,6 +201,13 @@ class Trainer(object):
                 self.saver.save(
                     self.session, os.path.join(self.train_dir, 'model'),
                     global_step=step)
+
+
+        try:
+            shutil.rmtree(self.latest_folder)
+        except:
+            pass
+        shutil.copytree(self.train_dir, self.latest_folder)
 
     def run_single_step(self, batch, step=None, is_train=True):
         _start_time = time.time()
@@ -287,7 +313,9 @@ def main():
     parser.add_argument('--demo_aggregation', type=str, default='avgpool',
                         choices=['concat', 'avgpool', 'maxpool'],
                         help='how to aggregate the demo features')
-
+    parser.add_argument('--max_steps', type=int, default=1000000)
+    parser.add_argument('--ckpt_save_step', type=int, default=1000)
+    parser.add_argument('--no_gpu', action='store_true', default=False)
     config = parser.parse_args()
 
     if config.dataset_type == 'karel':
@@ -308,7 +336,6 @@ def main():
     # per: sequence of perception primitives
     program, _, s_h, test_s_h, a_h, _, _, _, program_len, demo_len, test_demo_len, \
         per, test_per = data_tuple[:13]
-
     config.dim_program_token = np.asarray(program.shape)[0]
     config.max_program_len = np.asarray(program.shape)[1]
     config.k = np.asarray(s_h.shape)[0]

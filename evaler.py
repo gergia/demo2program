@@ -2,6 +2,9 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import pdb
+import traceback
+
 import numpy as np
 import h5py
 import os
@@ -70,17 +73,22 @@ class Evaler(object):
         slim.model_analyzer.analyze_vars(all_vars, print_info=True)
 
         tf.set_random_seed(123)
-
-        session_config = tf.ConfigProto(
-            allow_soft_placement=True,
-            gpu_options=tf.GPUOptions(allow_growth=True),
-            device_count={'GPU': 1},
-        )
+        if config.no_gpu is True:
+            session_config = tf.ConfigProto(
+                allow_soft_placement=True,
+                # gpu_options=tf.GPUOptions(allow_growth=True),
+                # device_count={'GPU': 1},
+            )
+        else:
+            session_config = tf.ConfigProto(
+                allow_soft_placement=True,
+                gpu_options=tf.GPUOptions(allow_growth=True),
+                device_count={'GPU': 1},
+            )
         self.session = tf.Session(config=session_config)
 
         # --- checkpoint and monitoring ---
         self.saver = tf.train.Saver(max_to_keep=100)
-
         self.checkpoint = config.checkpoint
         if self.checkpoint is '' and self.train_dir:
             self.checkpoint = tf.train.latest_checkpoint(self.train_dir)
@@ -105,6 +113,7 @@ class Evaler(object):
         threads = tf.train.start_queue_runners(self.session,
                                                coord=coord, start=True)
         try:
+
             if self.config.pred_program:
                 if not os.path.exists(self.output_dir):
                     os.makedirs(self.output_dir)
@@ -133,6 +142,7 @@ class Evaler(object):
                     self.config.dataset_path, 'data.hdf5'), 'r')
 
             if not self.config.no_loss:
+
                 loss_all = []
                 acc_all = []
                 hist_all = {}
@@ -402,6 +412,7 @@ def main():
     parser.add_argument('--pred_program', action='store_true', default=False,
                         help='set to True to write out '
                              'predicted and ground truth programs')
+
     parser.add_argument('--result_data', action='store_true', default=False,
                         help='set to True to save evaluation results')
     parser.add_argument('--result_data_path', type=str, default='result.hdf5',
@@ -422,6 +433,7 @@ def main():
                              'the summary of accuracies and losses')
     parser.add_argument('--summary_file', type=str, default='report.txt',
                         help='the path to write the summary of accuracies and losses')
+    parser.add_argument('--no_gpu', action='store_true', default=False)
     config = parser.parse_args()
 
     config.write_summary = not config.no_write_summary

@@ -483,7 +483,7 @@ class Model(object):
                 # We add token_dim + 1, to use this tokens as a starting token
                 # <s>
                 embedding_map = tf.get_variable(
-                    name="embedding_map", shape=[token_dim + 1, embedding_dim],
+                    name="embedding_map", shape=[token_dim + 2, embedding_dim],
                     initializer=tf.random_uniform_initializer(
                         minval=-0.01, maxval=0.01))
 

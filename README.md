@@ -113,6 +113,22 @@ python trainer.py --model induction_baseline --dataset_path /path/to/the/dataset
 python evaler.py --model [full/synthesis_baseline/summarizer/induction_baseline] --dataset_path /path/to/the/dataset/ --dataset_type [karel/vizdoom] [--train_dir /path/to/the/training/dir/ OR --checkpoint /path/to/the/trained/model]
 ```
 
+### Quick Running (code inspection and understanding)
+testing: 
+```bash
+python trainer.py --model [full | synthesis_baseline | summarizer |induction_baseline] --dataset_path datasets/karel_dataset --dataset_type karel --max_steps 100 --ckpt_save_step 99 --no_gpu
+````
+
+evaluating: 
+```bash
+python evaler.py --train_dir train_dir/latest_[full | synthesis_baseline | summarizer |induction_baseline]/ --model [full | synthesis_baseline | summarizer |induction_baseline] --dataset_path datasets/karel_dataset --dataset_type karel --pred_program --no_gpu
+```
+
+Changes introduced for quick running:
+ - cmd line parameters for max number of iterations and saving checkpoints
+ - cmd line parameter for disabling running on gpu
+ - in all `model_*.py` files, I had to increase the dimension of the embedding map. I wonder if that was 
+a mistake in the existing code, or some problem in my understanding (more likely). **TODO**: understand what is happening here
 ## Reproducing result on VizDoom dataset
 
 Because the size of the demonstrations in VizDoom is usually very large, it is difficult to use large batch size and results in very slow training.
