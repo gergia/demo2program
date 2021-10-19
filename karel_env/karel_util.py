@@ -1,5 +1,5 @@
 import numpy as np
-from karel import state_table
+from karel import state_table, action_table
 
 
 class color_code:
@@ -46,6 +46,13 @@ def state2symbol(s):
                 str += '.'
         print(str)
     return
+
+    # given an instance of karel world, print the history of its states and actions
+def print_history(w):
+    for i in range(len(w.a_h)):
+        state2symbol(w.s_h[i])
+        print("---> {} --->".format(action_table[w.a_h[i]]))
+    state2symbol(w.s_h[-1])
 
 
 # given a karel env state, return a visulized image
