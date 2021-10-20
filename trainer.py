@@ -203,10 +203,8 @@ class Trainer(object):
                     global_step=step)
 
 
-        try:
+        if os.path.exists(self.latest_folder):
             shutil.rmtree(self.latest_folder)
-        except:
-            pass
         shutil.copytree(self.train_dir, self.latest_folder)
 
     def run_single_step(self, batch, step=None, is_train=True):
