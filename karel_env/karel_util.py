@@ -27,10 +27,10 @@ def grid2str(grid):
 
 
 # given a karel env state, return a symbol representation
-def state2symbol(s):
+def state_repr(s):
     KAREL = "^>v<#"
+    str = ""
     for i in range(s.shape[0]):
-        str = ""
         for j in range(s.shape[1]):
             if np.sum(s[i, j, :4]) > 0 and np.sum(s[i, j, 6:]) > 0:
                 idx = np.argmax(s[i, j])
@@ -44,8 +44,12 @@ def state2symbol(s):
                 str += color_code.GREEN+'o'+color_code.END
             else:
                 str += '.'
-        print(str)
-    return
+        str += "\n"
+    return str
+
+
+def state2symbol(s):
+    print(state_repr(s))
 
     # given an instance of karel world, print the history of its states and actions
 def print_history(w):
