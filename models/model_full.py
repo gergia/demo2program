@@ -3,6 +3,8 @@ from __future__ import division
 from __future__ import print_function
 
 import copy
+import pdb
+
 import numpy as np
 import tensorflow as tf
 import tensorflow.contrib.rnn as rnn
@@ -48,14 +50,27 @@ class Model(object):
         self.max_program_len = config.max_program_len
         self.max_demo_len = config.max_demo_len
         self.max_action_len = self.max_demo_len
+
+        # self.k : number of demonstrations (number of input examples)
         self.k = config.k
         self.test_k = config.test_k
         self.h = config.h
         self.w = config.w
+
+        # self.depth : number of different states karel and
+        # a field (self.h, self.w) can be in (e.g., facing north/south, wall, or different number of markers)
         self.depth = config.depth
+
+        # self.action_space: number of action available to the agent.
+        # CONFUSION: it has one more than what I expected, perhaps this is the +1 that I was adding for the end of action
         self.action_space = config.action_space
+
+        # perception: if the neighboring fields are obstacle-free and if there is a marker at the Karel's current field
         self.per_dim = config.per_dim
 
+        # activate the option of sometimes learning from prediction and not always from the ground truth
+        # (a short description: https://www.evernote.com/shard/s189/client/snv?noteGuid=c9ac2e3f-a150-4d0c-9a44-16657e5d42cd&noteKey=5eb49d50695c903ca1b4a04934e63363&sn=https%3A%2F%2Fwww.evernote.com%2Fshard%2Fs189%2Fsh%2Fc9ac2e3f-a150-4d0c-9a44-16657e5d42cd%2F5eb49d50695c903ca1b4a04934e63363&title=Notes%2Bon%2BScheduled%2BSampling%2Bfor%2BSequence%2BPrediction%2Bwith%2BRecurrent%2BNeural%2BNetworks)
+        # IMPORTANT: default is False, so all the results reported in the paper are not using it
         if self.scheduled_sampling:
             if global_step is None:
                 raise ValueError('scheduled sampling requires global_step')
@@ -86,10 +101,11 @@ class Model(object):
             shape=[self.batch_size, self.dim_program_token,
                    self.max_program_len],
         )
-
+        # TODO: remains unclear what is the difference between self.program_tokens and self.program
         self.program_tokens = tf.placeholder(
             name='program_tokens', dtype=tf.int32,
             shape=[self.batch_size, self.max_program_len])
+
 
         self.s_h = tf.placeholder(
             name='s_h', dtype=tf.float32,
@@ -213,6 +229,7 @@ class Model(object):
 
         # s [bs, h, w, depth] -> feature [bs, v]
         # CNN
+        # # TODO: change here the definition of demo into a sequence of states, TOGETHER with actions and perceptions
         def State_Encoder(s, batch_size, scope='State_Encoder', reuse=False):
             with tf.variable_scope(scope, reuse=reuse) as scope:
                 if not reuse: log.warning(scope.name)
@@ -319,6 +336,7 @@ class Model(object):
         # =========
         self.ground_truth_program = self.program
         self.gt_tokens = tf.argmax(self.ground_truth_program, axis=1)
+
         # k list of [bs, ac, max_demo_len - 1] tensor
         self.gt_actions_onehot = [single_a_h
                                   for single_a_h
@@ -371,12 +389,16 @@ class Model(object):
         step1_c_list = []
         step1_feature_history_list = []
         for i in range(self.k):
+
+            # in our case, we shall add action and perception sequences directly to the input here
             step1_feature_history, step1_h, step1_c = \
                 Demo_Encoder(s_h[:, i, :, :, :, :], demo_len[:, i],
                              reuse=i > 0)
             step1_feature_history_list.append(step1_feature_history)
             step1_h_list.append(step1_h)
             step1_c_list.append(step1_c)
+
+        # summarizing all the demonstrations (this should remain the same)
         summary_h = SummarizeFeature(tf.stack(step1_h_list, axis=1),
                                      aggregation='avgpool',
                                      scope='summary_h')
@@ -387,6 +409,7 @@ class Model(object):
         demo_h_list = []
         demo_c_list = []
         demo_feature_history_list = []
+        # this is the outer loop from the paper
         for i in range(self.k):
             demo_feature_history, demo_h, demo_c = \
                 SecondPathEncoder(step1_feature_history_list[i],
@@ -396,6 +419,7 @@ class Model(object):
             demo_feature_history_list.append(demo_feature_history)
             demo_h_list.append(demo_h)
             demo_c_list.append(demo_c)
+        # aggregation is done with the relation network (consistent with the Fig. 4 from the paper)
         demo_h_summary = SummarizeFeature(tf.stack(demo_h_list, axis=1),
                                           aggregation='rn',
                                           scope='demo_h_summary')
@@ -497,7 +521,10 @@ class Model(object):
         # Demo feature -> Program
         self.program_lstm_cell = rnn.BasicLSTMCell(
             num_units=self.num_lstm_cell_units)
+
+        # default value for embedding_dim (num of hidden layers) here is 512
         embedding_dim = demo_h_summary.get_shape().as_list()[-1]
+
         self.pred_program, self.pred_program_len = LSTM_Decoder(
             demo_h_summary, demo_c_summary, self.program_tokens,
             self.program_lstm_cell, unroll_type=train_unroll_type,
@@ -522,6 +549,7 @@ class Model(object):
         assert self.greedy_pred_program.get_shape() == \
             self.ground_truth_program.get_shape()
 
+        # here are action decoder and perception decoder
         self.action_lstm_cell = rnn.BasicLSTMCell(
             num_units=self.num_lstm_cell_units)
         self.pred_action_list = []
@@ -1288,6 +1316,7 @@ class Model(object):
                          collections=['test'])
 
         # Visualize demo features
+        pdb.set_trace()
         if self.debug:
             i = 0  # show only the first images
             tf.summary.image("debug/demo_feature_history/k_{}".format(i),
