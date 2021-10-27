@@ -3,3 +3,6 @@ datasets/
 train_dir/
 **/*.out
 karel_env/dsl/_*
+karel_env/pddl/*
+karel_env/planner_output.txt
+karel_env/sas_plan

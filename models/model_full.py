@@ -1316,7 +1316,6 @@ class Model(object):
                          collections=['test'])
 
         # Visualize demo features
-        pdb.set_trace()
         if self.debug:
             i = 0  # show only the first images
             tf.summary.image("debug/demo_feature_history/k_{}".format(i),
