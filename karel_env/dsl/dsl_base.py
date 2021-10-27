@@ -3,6 +3,7 @@ Domain specific language for Karel Environment
 
 Code is adapted from https://github.com/carpedm20/karel
 """
+import pdb
 
 import numpy as np
 import ply.lex as lex
@@ -88,7 +89,9 @@ class KarelDSLBase(object):
         raise RuntimeError('Syntax Error')
 
     def random_code(self, start_token="prog", depth=0, max_depth=6, nesting_depth=0, max_nesting_depth=4):
-        code = " ".join(self.random_tokens(start_token, depth, max_depth, nesting_depth, max_nesting_depth))
+        tokens = self.random_tokens(start_token, depth, max_depth, nesting_depth, max_nesting_depth)
+
+        code = " ".join(tokens)
 
         return code
 
@@ -99,10 +102,15 @@ class KarelDSLBase(object):
         return program
 
     def run(self, karel_world, code, **kwargs):
+        karel_world.clear_history()
+
+        # special case for empty code
+        if code == "DEF run m(  m)":
+            return karel_world.s_h
+
         self.call_counter = [0]
         program = self.parse(code, **kwargs)
 
         # run program
-        karel_world.clear_history()
         program(karel_world)
         return karel_world.s_h
