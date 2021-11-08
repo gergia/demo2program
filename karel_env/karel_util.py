@@ -2,7 +2,11 @@ import logging
 import pdb
 
 import numpy as np
-from karel import state_table, action_table
+from karel import state_table, action_table, Karel_world
+from KarelTaskEnvironment import KarelTaskEnvironment
+import os
+from util import log
+
 
 
 
@@ -17,6 +21,88 @@ class color_code:
     END = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
+
+
+
+def get_planners_actions(init_state, end_state):
+    PLAN2CODE = {"go": "move", "right": "turnRight", "left": "turnLeft", "get": "pickMarker", "put": "putMarker" }
+    PLANNER_OUTPUT = "planner_output.txt"
+    PLANNER_SAS_FILE = "sas_plan"
+    PDDL_PROBLEM_DIR = "pddl/"
+
+
+    sq_problem_formulation = states2taskDict(init_state, end_state)
+    sq_karel_task_environment = KarelTaskEnvironment(sq_problem_formulation)
+
+    #print(sq_karel_task_environment)
+
+    # creating the planner dir if it does not exist
+    try:
+        os.makedirs(PDDL_PROBLEM_DIR)
+    except:
+        pass
+
+    domain_name = "karel-hoc-domain"
+    task_name = "karel-task"
+    pddl_problem_file = os.path.join(PDDL_PROBLEM_DIR, "problem.pddl")
+    with open(pddl_problem_file, "w") as pddl_problem:
+        problem_dictionary = sq_karel_task_environment.export_problem_hoc(domain_name, task_name)
+        pddl_problem.write(problem_dictionary)
+
+    pddl_domain_file = os.path.join(PDDL_PROBLEM_DIR, "domain.pddl")
+    with open(pddl_domain_file, "w") as pddl_domain:
+        domain_dictionary = KarelTaskEnvironment.export_domain_hoc(domain_name)
+        pddl_domain.write(domain_dictionary)
+
+    planning_command = "./do_the_planning.sh {} {} > {}".format(pddl_domain_file, pddl_problem_file,
+                                                                PLANNER_OUTPUT)
+    log.debug("planning...")
+    os.system(planning_command)
+    log.debug("planning done")
+
+    extracted_commands = extract_plan(PLANNER_SAS_FILE)
+    commands = [PLAN2CODE[c] for c in extracted_commands]
+    #print(extracted_commands)
+
+    planners_code_actions = "DEF run m( " + " ".join(commands) + " m)"
+
+    return planners_code_actions, sq_karel_task_environment
+
+
+def generate_execution_example(s_gen, h, w, wall_prob, dsl, karel_program, usePlanner=False):
+    s, _, _, _, _ = s_gen.generate_single_state(h, w, wall_prob)
+    karel_world = Karel_world()
+    karel_world.set_new_state(s)
+    plan_and_program_differ = False
+
+    # karel_util.state2symbol(s)
+    try:
+        s_h = dsl.run(karel_world, karel_program)
+        actions = get_actions(karel_world)
+        kw = karel_world
+    except RuntimeError as e:
+        raise RuntimeError("Error executing program: {}\n{}\n{}\n\n".format(karel_program, state_repr(s), e))
+        # raise Exception()
+    else:
+        if usePlanner:
+            try:
+                planners_code_actions, karel_task_environment = get_planners_actions(s_h[0], s_h[-1])
+                karel_world_p = Karel_world()
+                karel_world_p.set_new_state(s)
+                s_h_plan = dsl.run(karel_world_p, planners_code_actions)
+                planners_actions = get_actions(karel_world_p)
+
+                if not actions == planners_actions:
+                    plan_and_program_differ = True
+
+            except RuntimeError as e:
+                raise RuntimeError(
+                    log.debug("error planning: {}\n{}".format(planners_code_actions, e))
+                )
+
+            else:
+                kw = karel_world_p
+    return kw, plan_and_program_differ
 
 
 def grid2str(grid):

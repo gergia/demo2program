@@ -13,6 +13,8 @@ from dsl import get_KarelDSL
 from util import log
 
 import karel
+import karel_util
+from KarelTaskEnvironment import KarelTaskEnvironment
 
 """ Purpose of file is to append test demonstration data to existing dataset
 """
@@ -51,6 +53,7 @@ def generator(config):
     dir_name = config.dir_name
     h = config.height
     w = config.width
+    usePlanner = config.use_planner
     c = len(karel.state_table)
 
     wall_prob = config.wall_prob
@@ -81,6 +84,7 @@ def generator(config):
     max_demo_length_in_dataset = -1
     max_program_length_in_dataset = -1
     for id_ in ids:
+        log.info("Handling id = {}, count = {}".format(id_, count))
         grp = f[id_]
         # Reads a single program
         program_seq = grp['program'].value
@@ -91,26 +95,23 @@ def generator(config):
         num_demo = 0
         while num_demo < config.num_test_demo_per_program:
             try:
-                s, _, _, _, _ = s_gen.generate_single_state(h, w, wall_prob)
-                karel_world.set_new_state(s)
-                s_h = dsl.run(karel_world, program_code)
-            except RuntimeError:
-                pass
+                kw, plan_and_program_differ = karel_util.generate_execution_example(s_gen, h, w, wall_prob, dsl,
+                                                                                    program_code, usePlanner)
+            except RuntimeError as e:
+                log.debug("error generating demo: {}".format(e))
+
             else:
-                if len(karel_world.s_h) <= config.max_demo_length and \
-                        len(karel_world.s_h) >= config.min_demo_length:
-                    test_s_h_list.append(np.stack(karel_world.s_h, axis=0))
-                    a_h_list.append(np.array(karel_world.a_h))
+                if len(kw.s_h) <= config.max_demo_length and len(kw.s_h) >= config.min_demo_length:
+                    test_s_h_list.append(np.stack(kw.s_h, axis=0))
+                    a_h_list.append(np.array(kw.a_h))
                     num_demo += 1
 
         len_test_s_h = np.array([s_h.shape[0] for s_h in test_s_h_list], dtype=np.int16)
-
         demos_test_s_h = np.zeros([num_demo, np.max(len_test_s_h), h, w, c], dtype=bool)
         for i, s_h in enumerate(test_s_h_list):
             demos_test_s_h[i, :s_h.shape[0]] = s_h
 
         len_a_h = np.array([a_h.shape[0] for a_h in a_h_list], dtype=np.int16)
-
         demos_a_h = np.zeros([num_demo, np.max(len_a_h)], dtype=np.int8)
         for i, a_h in enumerate(a_h_list):
             demos_a_h[i, :a_h.shape[0]] = a_h
@@ -169,6 +170,8 @@ def main():
                         help='max demo length')
     parser.add_argument('--num_test_demo_per_program', type=int, default=5,
                         help='number of unseen demonstrations')
+    parser.add_argument('--use_planner', action='store_true', default=False,
+                        help='set to True to generate states using a planner instead of program execution')
     args = parser.parse_args()
 
     generator(args)

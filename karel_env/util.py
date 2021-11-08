@@ -11,7 +11,7 @@ import logging
 from colorlog import ColoredFormatter
 
 ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
+ch.setLevel(logging.INFO)
 
 formatter = ColoredFormatter(
     "%(log_color)s[%(asctime)s] %(message)s",
