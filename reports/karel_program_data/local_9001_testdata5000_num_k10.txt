@@ -1,0 +1,22 @@
+Model class: full
+Checkpoint: train_dir/karel-datasets_karel_dataset_long_-full-default-bs_32_lr_0.001_lstm_cell_512_k_10-20211021-180308/model-9001
+Dataset: %s datasets/karel_dataset_long/
+[Final Avg Report] 
+[Loss] avg_action_loss: 0.022 greedy_avg_action_loss: 0.039 greedy_program_loss: 4.686 program_loss: 0.231 
+[Acc]  avg_action_seq_acc: 0.945
+avg_action_token_acc: 0.994
+greedy_avg_action_seq_acc: 0.738
+greedy_avg_action_token_acc: 0.825
+greedy_exact_program_accuracy: 0.504
+greedy_program_seq_acc: 0.420
+greedy_program_syntax_acc: 1.000
+greedy_program_token_acc: 0.607
+pred_exact_program_accuracy: 0.421
+program_seq_acc: 0.421
+program_syntax_acc: 0.518
+program_token_acc: 0.929
+[Hist] greedy_program_execution_acc_hist: [ 0.183,  0.008,  0.006,  0.005,  0.008,  0.007,  0.009,  0.014,  0.017,  0.022,  0.720, ]
+program_execution_acc_hist: [ 0.563,  0.002,  0.002,  0.000,  0.001,  0.001,  0.002,  0.002,  0.001,  0.001,  0.426, ]
+test_greedy_program_execution_acc_hist: [ 0.190,  0.016,  0.015,  0.021,  0.024,  0.733, ]
+test_program_execution_acc_hist: [ 0.565,  0.002,  0.002,  0.002,  0.002,  0.428, ]
+[Time] (366.321 sec)

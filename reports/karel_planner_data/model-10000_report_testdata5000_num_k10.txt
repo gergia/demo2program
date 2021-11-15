@@ -1,0 +1,22 @@
+Model class: full
+Checkpoint: train_dir/karel-_RSE_karel_programs_work_planner_data_-full-default-bs_32_lr_0.001_lstm_cell_512_k_10-20211104-104703/model-10000
+Dataset: %s /RSE/karel_programs/work/planner_data/
+[Final Avg Report] 
+[Loss] avg_action_loss: 0.005 greedy_avg_action_loss: 0.009 greedy_program_loss: 7.146 program_loss: 0.490 
+[Acc]  avg_action_seq_acc: 0.993
+avg_action_token_acc: 0.998
+greedy_avg_action_seq_acc: 0.641
+greedy_avg_action_token_acc: 0.516
+greedy_exact_program_accuracy: 0.064
+greedy_program_seq_acc: 0.044
+greedy_program_syntax_acc: 1.000
+greedy_program_token_acc: 0.378
+pred_exact_program_accuracy: 0.046
+program_seq_acc: 0.046
+program_syntax_acc: 0.225
+program_token_acc: 0.850
+[Hist] greedy_program_execution_acc_hist: [ 0.268,  0.017,  0.024,  0.021,  0.021,  0.038,  0.053,  0.068,  0.093,  0.117,  0.280, ]
+program_execution_acc_hist: [ 0.916,  0.002,  0.002,  0.002,  0.001,  0.003,  0.003,  0.004,  0.004,  0.006,  0.056, ]
+test_greedy_program_execution_acc_hist: [ 0.300,  0.058,  0.068,  0.101,  0.135,  0.339, ]
+test_program_execution_acc_hist: [ 0.918,  0.005,  0.007,  0.005,  0.005,  0.059, ]
+[Time] (263.698 sec)
